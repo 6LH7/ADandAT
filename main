@@ -1537,69 +1537,62 @@ Fluent:Notify({ Title = "AutoFarm", Content = "Загружено", Duration = 2
 
 task.spawn(MainFarmLoop)
 
--- AdminCheck GUI v2.1
--- LocalScript - Place inside StarterPlayerScripts or StarterCharacterScripts
-
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- ============================================================
---  ADMIN CHECK CORE LOGIC
+--  STAFF LIST
+-- ============================================================
+
+local staffPlayers = {
+    groups = {
+        [4165692] = {
+            ["Tester"]=true,["Contributor"]=true,["Tester+"]=true,["Developer"]=true,
+            ["Developer+"]=true,["Community Manager"]=true,["Manager"]=true,["Owner"]=true
+        },
+        [32406137] = {
+            ["Junior"]=true,["Moderator"]=true,["Senior"]=true,["Administrator"]=true,
+            ["Manager"]=true,["Holder"]=true
+        },
+        [8024440] = {
+            ["zzzz"]=true,["reshape enjoyer"]=true,["i heart reshape"]=true,["reshape superfan"]=true
+        },
+        [14927228] = { ["♞"]=true }
+    },
+    users = {
+        3294804378,93676120,54087314,81275825,140837601,1229486091,46567801,418086275,29706395,
+        3717066084,1424338327,5046662686,5046661126,5046659439,418199326,1024216621,1810535041,
+        63238912,111250044,63315426,730176906,141193516,194512073,193945439,412741116,195538733,
+        102045519,955294,957835150,25689921,366613818,281593651,455275714,208929505,96783330,
+        156152502,93281166,959606619,142821118,632886139,175931803,122209625,278097946,142989311,
+        1517131734,446849296,87189764,67180844,9212846,47352513,48058122,155413858,10497435,
+        513615792,55893752,55476024,151691292,136584758,16983447,3111449,94693025,271400893,
+        5005262660,295331237,64489098,244844600,114332275,25048901,69262878,50801509,92504899,
+        42066711,50585425,31365111,166406495,2457253857,29761878,21831137,948293345,439942262,
+        38578487,1163048,7713309208,3659305297,15598614,34616594,626833004,198610386,153835477,
+        3923114296,3937697838,102146039,119861460,371665775,1206543842,93428604,1863173316,90814576,
+        374665997,423005063,140172831,42662179,9066859,438805620,14855669,727189337,1871290386,
+        608073286
+    }
+}
+
+-- ============================================================
+--  CORE DETECTION LOGIC
 -- ============================================================
 
 local AdminCheck_Enabled = false
 local AdminCheck_Connection = nil
 
-local staffPlayers = {
-    groups = {
-        [4165692] = {
-            ["Tester"] = true, ["Contributor"] = true, ["Tester+"] = true, ["Developer"] = true,
-            ["Developer+"] = true, ["Community Manager"] = true, ["Manager"] = true, ["Owner"] = true
-        },
-        [32406137] = {
-            ["Junior"] = true, ["Moderator"] = true, ["Senior"] = true, ["Administrator"] = true,
-            ["Manager"] = true, ["Holder"] = true
-        },
-        [8024440] = {
-            ["zzzz"] = true, ["reshape enjoyer"] = true, ["i heart reshape"] = true, ["reshape superfan"] = true
-        },
-        [14927228] = {
-            ["♞"] = true
-        }
-    },
-    users = {
-        3294804378, 93676120, 54087314, 81275825, 140837601, 1229486091, 46567801, 418086275, 29706395,
-        3717066084, 1424338327, 5046662686, 5046661126, 5046659439, 418199326, 1024216621, 1810535041,
-        63238912, 111250044, 63315426, 730176906, 141193516, 194512073, 193945439, 412741116, 195538733,
-        102045519, 955294, 957835150, 25689921, 366613818, 281593651, 455275714, 208929505, 96783330,
-        156152502, 93281166, 959606619, 142821118, 632886139, 175931803, 122209625, 278097946, 142989311,
-        1517131734, 446849296, 87189764, 67180844, 9212846, 47352513, 48058122, 155413858, 10497435,
-        513615792, 55893752, 55476024, 151691292, 136584758, 16983447, 3111449, 94693025, 271400893,
-        5005262660, 295331237, 64489098, 244844600, 114332275, 25048901, 69262878, 50801509, 92504899,
-        42066711, 50585425, 31365111, 166406495, 2457253857, 29761878, 21831137, 948293345, 439942262,
-        38578487, 1163048, 7713309208, 3659305297, 15598614, 34616594, 626833004, 198610386, 153835477,
-        3923114296, 3937697838, 102146039, 119861460, 371665775, 1206543842, 93428604, 1863173316, 90814576,
-        374665997, 423005063, 140172831, 42662179, 9066859, 438805620, 14855669, 727189337, 1871290386,
-        608073286
-    }
-}
-
 local function hasTracker(player)
     if not player or not player:IsA("Player") then return false, nil end
-    local children = player:GetChildren()
-    for i = 1, #children do
-        local child = children[i]
+    for _, child in ipairs(player:GetChildren()) do
         if typeof(child.Name) == "string" and string.sub(child.Name, -8) == "Tracker$" then
-            local trackedPlayerName = string.sub(child.Name, 1, -9)
-            if Players:FindFirstChild(trackedPlayerName) then
-                return true, trackedPlayerName
-            end
+            local trackedName = string.sub(child.Name, 1, -9)
+            if Players:FindFirstChild(trackedName) then return true, trackedName end
         end
     end
     return false, nil
@@ -1609,119 +1602,40 @@ local function isStaff(player)
     if not player or not player:IsA("Player") then return false end
     if staffPlayers.groups then
         for groupID, roles in pairs(staffPlayers.groups) do
-            local successRank, rank = pcall(function() return player:GetRankInGroup(groupID) end)
-            if successRank and rank and rank > 0 then
-                local successRole, roleName = pcall(function() return player:GetRoleInGroup(groupID) end)
-                if successRole and roleName and roles[roleName] then
+            local ok1, rank = pcall(function() return player:GetRankInGroup(groupID) end)
+            if ok1 and rank and rank > 0 then
+                local ok2, roleName = pcall(function() return player:GetRoleInGroup(groupID) end)
+                if ok2 and roleName and roles[roleName] then
                     return true, roleName, groupID
                 end
             end
         end
     end
     if staffPlayers.users then
-        for i = 1, #staffPlayers.users do
-            if player.UserId == staffPlayers.users[i] then
-                return true, "UserID", player.UserId
-            end
+        for _, uid in ipairs(staffPlayers.users) do
+            if player.UserId == uid then return true, "UserID", uid end
         end
     end
     return false
 end
 
-local function kickformat(staffInfo)
-    if not staffInfo or not staffInfo.Staff then return "Staff detected." end
-    local message = "Staff detected:\n"
-    for i, staff in ipairs(staffInfo.Staff) do
-        local idType = "Role"
-        local idValue = staff.Role or "Unknown"
-        if staff.Role == "UserID" then
-            idType = "UserID"
-            idValue = staff.GroupId or "Unknown"
-        elseif staff.Role == "Tracker User" then
-            idType = "Tracker"
-            idValue = "Active"
-        end
-        message = message .. string.format(
-            "- %s (%s: %s)%s",
-            staff.Name or "Unknown",
-            idType,
-            idValue,
-            staff.TrackedPlayer and " - Tracking: " .. staff.TrackedPlayer or ""
-        )
-        if i < #staffInfo.Staff then message = message .. "\n" end
-    end
-    return message
-end
-
-local function kickWithStaffInfo(staffInfo)
-    local kickMsg = kickformat(staffInfo)
-    if LocalPlayer then
-        LocalPlayer:Kick("Staff joined\n\n" .. kickMsg)
-    end
-end
-
-local function checkCurrentStaff()
-    local staffFound = {}
-    local currentPlayers = Players:GetPlayers()
-    for i = 1, #currentPlayers do
-        local player = currentPlayers[i]
-        if player ~= LocalPlayer then
-            local isPlayerStaff, role, groupID = isStaff(player)
-            local hasTrackers, trackedPlayer = hasTracker(player)
-            if isPlayerStaff or hasTrackers then
-                table.insert(staffFound, {
-                    Name = player.Name,
-                    Role = hasTrackers and "Tracker User" or role,
-                    GroupId = groupID,
-                    TrackedPlayer = trackedPlayer
-                })
-            end
-        end
-    end
-    if #staffFound > 0 then
-        kickWithStaffInfo({Staff = staffFound})
-        return true
-    end
-    return false
-end
-
-local function onPlayerJoining(player)
-    if not AdminCheck_Enabled then return end
-    local isPlayerStaff, role, groupID = isStaff(player)
-    local hasTrackers, trackedPlayer = hasTracker(player)
-    if isPlayerStaff or hasTrackers then
-        kickWithStaffInfo({
-            Staff = {{
-                Name = player.Name,
-                Role = hasTrackers and "Tracker User" or role,
-                GroupId = groupID,
-                TrackedPlayer = trackedPlayer
-            }}
-        })
-    end
-end
-
 -- ============================================================
---  GUI BUILDER
+--  GUI HELPER
 -- ============================================================
 
-local function Create(className, props, children)
-    local obj = Instance.new(className)
+local function Create(cls, props)
+    local obj = Instance.new(cls)
     for k, v in pairs(props) do
-        if k ~= "Parent" then
-            obj[k] = v
-        end
-    end
-    if children then
-        for _, child in ipairs(children) do
-            child.Parent = obj
-        end
+        if k ~= "Parent" then obj[k] = v end
     end
     if props.Parent then obj.Parent = props.Parent end
     return obj
 end
 
--- Screen GUI
+-- ============================================================
+--  SCREEN GUI ROOT
+-- ============================================================
+
 local ScreenGui = Create("ScreenGui", {
     Name = "AdminCheckGUI",
     ResetOnSpawn = false,
@@ -1729,84 +1643,318 @@ local ScreenGui = Create("ScreenGui", {
     Parent = PlayerGui
 })
 
--- ── TOGGLE BUTTON (always visible, top-left) ──────────────────
-local ToggleBtn = Create("TextButton", {
-    Name = "ToggleBtn",
-    Size = UDim2.new(0, 38, 0, 38),
-    Position = UDim2.new(0, 12, 0, 12),
-    BackgroundColor3 = Color3.fromRGB(15, 15, 20),
+-- ============================================================
+--  STAFF ALERT POPUP  (shown when staff detected)
+-- ============================================================
+
+-- Dim overlay
+local AlertOverlay = Create("Frame", {
+    Size = UDim2.new(1,0,1,0),
+    BackgroundColor3 = Color3.fromRGB(0,0,0),
+    BackgroundTransparency = 0.45,
     BorderSizePixel = 0,
-    Text = "🛡",
-    TextSize = 18,
+    ZIndex = 50,
+    Visible = false,
+    Parent = ScreenGui
+})
+
+-- Alert card
+local AlertCard = Create("Frame", {
+    Size = UDim2.new(0,320,0,230),
+    Position = UDim2.new(0.5,-160,0.5,-130),
+    BackgroundColor3 = Color3.fromRGB(10,10,18),
+    BorderSizePixel = 0,
+    ZIndex = 51,
+    Visible = false,
+    Parent = ScreenGui
+})
+Create("UICorner", {CornerRadius=UDim.new(0,14), Parent=AlertCard})
+Create("UIStroke", {Color=Color3.fromRGB(200,60,60), Thickness=2, Parent=AlertCard})
+
+-- Red top bar
+local AlertTopBar = Create("Frame", {
+    Size = UDim2.new(1,0,0,48),
+    BackgroundColor3 = Color3.fromRGB(160,30,30),
+    BorderSizePixel = 0,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+Create("UICorner", {CornerRadius=UDim.new(0,14), Parent=AlertTopBar})
+-- Cover bottom-round corners of top bar
+Create("Frame", {
+    Size = UDim2.new(1,0,0,14),
+    Position = UDim2.new(0,0,1,-14),
+    BackgroundColor3 = Color3.fromRGB(160,30,30),
+    BorderSizePixel = 0,
+    ZIndex = 52,
+    Parent = AlertTopBar
+})
+
+local AlertTitle = Create("TextLabel", {
+    Size = UDim2.new(1,0,1,0),
+    BackgroundTransparency = 1,
+    Text = "! STAFF DETECTED",
+    TextColor3 = Color3.fromRGB(255,255,255),
+    TextSize = 15,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 53,
+    Parent = AlertTopBar
+})
+
+-- Staff name
+local AlertName = Create("TextLabel", {
+    Size = UDim2.new(1,-24,0,28),
+    Position = UDim2.new(0,12,0,56),
+    BackgroundTransparency = 1,
+    Text = "Player: ???",
+    TextColor3 = Color3.fromRGB(255,200,200),
+    TextSize = 16,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+
+-- Role
+local AlertRole = Create("TextLabel", {
+    Size = UDim2.new(1,-24,0,22),
+    Position = UDim2.new(0,12,0,84),
+    BackgroundTransparency = 1,
+    Text = "Role: Unknown",
+    TextColor3 = Color3.fromRGB(200,150,150),
+    TextSize = 12,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+
+-- Countdown label
+local AlertCountdown = Create("TextLabel", {
+    Size = UDim2.new(1,0,0,26),
+    Position = UDim2.new(0,0,0,110),
+    BackgroundTransparency = 1,
+    Text = "Auto-leaving in 3...",
+    TextColor3 = Color3.fromRGB(255,100,100),
+    TextSize = 13,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+
+-- Progress bar bg
+local ProgressBG = Create("Frame", {
+    Size = UDim2.new(1,-24,0,4),
+    Position = UDim2.new(0,12,0,138),
+    BackgroundColor3 = Color3.fromRGB(50,20,20),
+    BorderSizePixel = 0,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+Create("UICorner", {CornerRadius=UDim.new(1,0), Parent=ProgressBG})
+
+local ProgressBar = Create("Frame", {
+    Size = UDim2.new(1,0,1,0),
+    BackgroundColor3 = Color3.fromRGB(220,60,60),
+    BorderSizePixel = 0,
+    ZIndex = 53,
+    Parent = ProgressBG
+})
+Create("UICorner", {CornerRadius=UDim.new(1,0), Parent=ProgressBar})
+
+-- LEAVE button
+local LeaveBtn = Create("TextButton", {
+    Size = UDim2.new(0,130,0,42),
+    Position = UDim2.new(0,12,1,-58),
+    BackgroundColor3 = Color3.fromRGB(180,35,35),
+    BorderSizePixel = 0,
+    Text = "LEAVE",
+    TextColor3 = Color3.fromRGB(255,255,255),
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=LeaveBtn})
+
+-- STAY button
+local StayBtn = Create("TextButton", {
+    Size = UDim2.new(0,130,0,42),
+    Position = UDim2.new(1,-142,1,-58),
+    BackgroundColor3 = Color3.fromRGB(30,30,50),
+    BorderSizePixel = 0,
+    Text = "STAY",
+    TextColor3 = Color3.fromRGB(160,160,200),
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 52,
+    Parent = AlertCard
+})
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=StayBtn})
+Create("UIStroke", {Color=Color3.fromRGB(60,60,100), Thickness=1, Parent=StayBtn})
+
+-- ── Alert logic ───────────────────────────────────────────────
+
+local alertActive = false
+local alertCountdownThread = nil
+
+local function closeAlert()
+    alertActive = false
+    if alertCountdownThread then
+        task.cancel(alertCountdownThread)
+        alertCountdownThread = nil
+    end
+    TweenService:Create(AlertCard, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0,0,0,0),
+        Position = UDim2.new(0.5,0,0.5,0)
+    }):Play()
+    task.wait(0.2)
+    AlertCard.Visible = false
+    AlertOverlay.Visible = false
+end
+
+local function showStaffAlert(staffName, staffRole, onLeave)
+    if alertActive then return end
+    alertActive = true
+
+    -- Populate info
+    AlertName.Text = "Player:  " .. (staffName or "Unknown")
+    local roleDisplay = staffRole or "Unknown"
+    if roleDisplay == "UserID" then roleDisplay = "Known User ID" end
+    AlertRole.Text = "Role:  " .. roleDisplay
+
+    -- Show
+    AlertOverlay.Visible = true
+    AlertCard.Visible = true
+    AlertCard.Size = UDim2.new(0,0,0,0)
+    AlertCard.Position = UDim2.new(0.5,0,0.5,0)
+    TweenService:Create(AlertCard, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0,320,0,230),
+        Position = UDim2.new(0.5,-160,0.5,-115)
+    }):Play()
+
+    -- Reset progress bar
+    ProgressBar.Size = UDim2.new(1,0,1,0)
+
+    -- Countdown
+    alertCountdownThread = task.spawn(function()
+        local duration = 3
+        local steps = 60
+        local stepTime = duration / steps
+        for i = steps, 0, -1 do
+            if not alertActive then return end
+            local frac = i / steps
+            local secs = math.ceil(frac * duration)
+            AlertCountdown.Text = "Auto-leaving in " .. secs .. "..."
+            TweenService:Create(ProgressBar, TweenInfo.new(stepTime, Enum.EasingStyle.Linear), {
+                Size = UDim2.new(frac, 0, 1, 0)
+            }):Play()
+            task.wait(stepTime)
+        end
+        -- Time's up — kick
+        if alertActive then
+            alertActive = false
+            AlertCard.Visible = false
+            AlertOverlay.Visible = false
+            if onLeave then onLeave() end
+        end
+    end)
+end
+
+LeaveBtn.MouseButton1Click:Connect(function()
+    if not alertActive then return end
+    local savedLeave = nil
+    -- Just kick directly
+    closeAlert()
+    task.wait(0.1)
+    LocalPlayer:Kick("You left due to staff presence.")
+end)
+
+StayBtn.MouseButton1Click:Connect(function()
+    closeAlert()
+    -- Just dismiss, no kick
+end)
+
+-- ============================================================
+--  MAIN PANEL GUI
+-- ============================================================
+
+-- Toggle button
+local ToggleBtn = Create("TextButton", {
+    Size = UDim2.new(0,38,0,38),
+    Position = UDim2.new(0,12,0,12),
+    BackgroundColor3 = Color3.fromRGB(15,15,20),
+    BorderSizePixel = 0,
+    Text = "🛡️", 
+    TextColor3 = Color3.fromRGB(180,180,255),
+    TextSize = 16,
     Font = Enum.Font.GothamBold,
     ZIndex = 20,
     Parent = ScreenGui
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = ToggleBtn })
-Create("UIStroke", { Color = Color3.fromRGB(80, 80, 120), Thickness = 1, Parent = ToggleBtn })
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=ToggleBtn})
+Create("UIStroke", {Color=Color3.fromRGB(80,80,120), Thickness=1, Parent=ToggleBtn})
 
--- ── MAIN FRAME ────────────────────────────────────────────────
+-- Main frame
 local MainFrame = Create("Frame", {
     Name = "MainFrame",
-    Size = UDim2.new(0, 300, 0, 360),
-    Position = UDim2.new(0, 58, 0, 8),
-    BackgroundColor3 = Color3.fromRGB(10, 10, 16),
+    Size = UDim2.new(0,300,0,370),
+    Position = UDim2.new(0,58,0,8),
+    BackgroundColor3 = Color3.fromRGB(10,10,16),
     BorderSizePixel = 0,
     ClipsDescendants = true,
     ZIndex = 10,
     Visible = false,
     Parent = ScreenGui
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = MainFrame })
-Create("UIStroke", { Color = Color3.fromRGB(60, 60, 100), Thickness = 1, Parent = MainFrame })
+Create("UICorner", {CornerRadius=UDim.new(0,12), Parent=MainFrame})
+Create("UIStroke", {Color=Color3.fromRGB(60,60,100), Thickness=1, Parent=MainFrame})
 
--- Scanline effect (decorative strip)
-local ScanStrip = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 2),
-    Position = UDim2.new(0, 0, 0, 44),
-    BackgroundColor3 = Color3.fromRGB(70, 70, 200),
-    BorderSizePixel = 0,
-    ZIndex = 11,
-    Parent = MainFrame
-})
-
--- ── TITLE BAR ─────────────────────────────────────────────────
+-- Title bar
 local TitleBar = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 44),
-    Position = UDim2.new(0, 0, 0, 0),
-    BackgroundColor3 = Color3.fromRGB(14, 14, 22),
+    Size = UDim2.new(1,0,0,44),
+    BackgroundColor3 = Color3.fromRGB(14,14,22),
     BorderSizePixel = 0,
     ZIndex = 12,
     Parent = MainFrame
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = TitleBar })
+Create("UICorner", {CornerRadius=UDim.new(0,12), Parent=TitleBar})
 
-local TitleLabel = Create("TextLabel", {
-    Size = UDim2.new(1, -80, 1, 0),
-    Position = UDim2.new(0, 14, 0, 0),
+Create("TextLabel", {
+    Size = UDim2.new(1,-60,1,0),
+    Position = UDim2.new(0,14,0,0),
     BackgroundTransparency = 1,
-    Text = "🛡  ADMIN CHECK",
-    TextColor3 = Color3.fromRGB(200, 200, 255),
+    Text = "ADMIN CHECK",
+    TextColor3 = Color3.fromRGB(200,200,255),
     TextSize = 13,
     Font = Enum.Font.GothamBold,
     TextXAlignment = Enum.TextXAlignment.Left,
     ZIndex = 13,
     Parent = TitleBar
 })
-
-local VersionLabel = Create("TextLabel", {
-    Size = UDim2.new(0, 50, 1, 0),
-    Position = UDim2.new(1, -60, 0, 0),
+Create("TextLabel", {
+    Size = UDim2.new(0,50,1,0),
+    Position = UDim2.new(1,-58,0,0),
     BackgroundTransparency = 1,
-    Text = "v2.1",
-    TextColor3 = Color3.fromRGB(80, 80, 120),
+    Text = "v2.2",
+    TextColor3 = Color3.fromRGB(70,70,110),
     TextSize = 11,
     Font = Enum.Font.Gotham,
     ZIndex = 13,
     Parent = TitleBar
 })
 
--- Drag logic
+-- Separator line
+Create("Frame", {
+    Size = UDim2.new(1,0,0,2),
+    Position = UDim2.new(0,0,0,44),
+    BackgroundColor3 = Color3.fromRGB(60,60,180),
+    BorderSizePixel = 0,
+    ZIndex = 11,
+    Parent = MainFrame
+})
+
+-- Drag
 local dragging, dragInput, dragStart, startPos
 TitleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1826,294 +1974,244 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
     end
 end)
 
--- ── CONTENT AREA ──────────────────────────────────────────────
+-- Content list
 local Content = Create("Frame", {
-    Size = UDim2.new(1, -24, 1, -56),
-    Position = UDim2.new(0, 12, 0, 52),
+    Size = UDim2.new(1,-24,1,-56),
+    Position = UDim2.new(0,12,0,52),
     BackgroundTransparency = 1,
     ZIndex = 11,
     Parent = MainFrame
 })
-Create("UIListLayout", {
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Padding = UDim.new(0, 8),
-    Parent = Content
-})
+Create("UIListLayout", {SortOrder=Enum.SortOrder.LayoutOrder, Padding=UDim.new(0,8), Parent=Content})
 
--- ── STATUS CARD ───────────────────────────────────────────────
+-- Status card
 local StatusCard = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 72),
-    BackgroundColor3 = Color3.fromRGB(18, 18, 28),
-    BorderSizePixel = 0,
-    LayoutOrder = 1,
-    ZIndex = 12,
-    Parent = Content
+    Size = UDim2.new(1,0,0,72),
+    BackgroundColor3 = Color3.fromRGB(18,18,28),
+    BorderSizePixel=0, LayoutOrder=1, ZIndex=12, Parent=Content
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = StatusCard })
-Create("UIStroke", { Color = Color3.fromRGB(40, 40, 70), Thickness = 1, Parent = StatusCard })
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=StatusCard})
+Create("UIStroke", {Color=Color3.fromRGB(40,40,70), Thickness=1, Parent=StatusCard})
 
 local StatusDot = Create("Frame", {
-    Size = UDim2.new(0, 10, 0, 10),
-    Position = UDim2.new(0, 14, 0.5, -5),
-    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-    BorderSizePixel = 0,
-    ZIndex = 13,
-    Parent = StatusCard
+    Size=UDim2.new(0,10,0,10), Position=UDim2.new(0,14,0.5,-5),
+    BackgroundColor3=Color3.fromRGB(60,60,60), BorderSizePixel=0, ZIndex=13, Parent=StatusCard
 })
-Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = StatusDot })
+Create("UICorner", {CornerRadius=UDim.new(1,0), Parent=StatusDot})
 
-local StatusTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -40, 0, 20),
-    Position = UDim2.new(0, 34, 0, 12),
-    BackgroundTransparency = 1,
-    Text = "PROTECTION STATUS",
-    TextColor3 = Color3.fromRGB(100, 100, 150),
-    TextSize = 10,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = StatusCard
+Create("TextLabel", {
+    Size=UDim2.new(1,-40,0,20), Position=UDim2.new(0,34,0,12),
+    BackgroundTransparency=1, Text="PROTECTION STATUS",
+    TextColor3=Color3.fromRGB(100,100,150), TextSize=10, Font=Enum.Font.GothamBold,
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=13, Parent=StatusCard
 })
-
 local StatusText = Create("TextLabel", {
-    Size = UDim2.new(1, -40, 0, 24),
-    Position = UDim2.new(0, 34, 0, 32),
-    BackgroundTransparency = 1,
-    Text = "INACTIVE",
-    TextColor3 = Color3.fromRGB(100, 100, 100),
-    TextSize = 18,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = StatusCard
+    Size=UDim2.new(1,-40,0,24), Position=UDim2.new(0,34,0,32),
+    BackgroundTransparency=1, Text="INACTIVE",
+    TextColor3=Color3.fromRGB(100,100,100), TextSize=18, Font=Enum.Font.GothamBold,
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=13, Parent=StatusCard
 })
 
--- ── TOGGLE SWITCH ROW ─────────────────────────────────────────
+-- Toggle row
 local ToggleRow = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 50),
-    BackgroundColor3 = Color3.fromRGB(18, 18, 28),
-    BorderSizePixel = 0,
-    LayoutOrder = 2,
-    ZIndex = 12,
-    Parent = Content
+    Size=UDim2.new(1,0,0,50), BackgroundColor3=Color3.fromRGB(18,18,28),
+    BorderSizePixel=0, LayoutOrder=2, ZIndex=12, Parent=Content
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = ToggleRow })
-Create("UIStroke", { Color = Color3.fromRGB(40, 40, 70), Thickness = 1, Parent = ToggleRow })
-
-local ToggleLabel = Create("TextLabel", {
-    Size = UDim2.new(1, -70, 1, 0),
-    Position = UDim2.new(0, 14, 0, 0),
-    BackgroundTransparency = 1,
-    Text = "Enable Monitoring",
-    TextColor3 = Color3.fromRGB(180, 180, 220),
-    TextSize = 13,
-    Font = Enum.Font.Gotham,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = ToggleRow
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=ToggleRow})
+Create("UIStroke", {Color=Color3.fromRGB(40,40,70), Thickness=1, Parent=ToggleRow})
+Create("TextLabel", {
+    Size=UDim2.new(1,-70,1,0), Position=UDim2.new(0,14,0,0),
+    BackgroundTransparency=1, Text="Enable Monitoring",
+    TextColor3=Color3.fromRGB(180,180,220), TextSize=13, Font=Enum.Font.Gotham,
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=13, Parent=ToggleRow
 })
 
--- Switch background
 local SwitchBG = Create("Frame", {
-    Size = UDim2.new(0, 46, 0, 24),
-    Position = UDim2.new(1, -58, 0.5, -12),
-    BackgroundColor3 = Color3.fromRGB(40, 40, 55),
-    BorderSizePixel = 0,
-    ZIndex = 13,
-    Parent = ToggleRow
+    Size=UDim2.new(0,46,0,24), Position=UDim2.new(1,-58,0.5,-12),
+    BackgroundColor3=Color3.fromRGB(40,40,55), BorderSizePixel=0, ZIndex=13, Parent=ToggleRow
 })
-Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = SwitchBG })
-
+Create("UICorner", {CornerRadius=UDim.new(1,0), Parent=SwitchBG})
 local SwitchKnob = Create("Frame", {
-    Size = UDim2.new(0, 18, 0, 18),
-    Position = UDim2.new(0, 3, 0.5, -9),
-    BackgroundColor3 = Color3.fromRGB(100, 100, 120),
-    BorderSizePixel = 0,
-    ZIndex = 14,
-    Parent = SwitchBG
+    Size=UDim2.new(0,18,0,18), Position=UDim2.new(0,3,0.5,-9),
+    BackgroundColor3=Color3.fromRGB(100,100,120), BorderSizePixel=0, ZIndex=14, Parent=SwitchBG
 })
-Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = SwitchKnob })
-
+Create("UICorner", {CornerRadius=UDim.new(1,0), Parent=SwitchKnob})
 local SwitchButton = Create("TextButton", {
-    Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-    Text = "",
-    ZIndex = 15,
-    Parent = SwitchBG
+    Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="", ZIndex=15, Parent=SwitchBG
 })
 
--- ── SCAN NOW BUTTON ───────────────────────────────────────────
+-- Scan button (NO emoji - plain text only to avoid squares)
 local ScanBtn = Create("TextButton", {
-    Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(30, 30, 55),
-    BorderSizePixel = 0,
-    Text = "⟳  SCAN CURRENT PLAYERS",
-    TextColor3 = Color3.fromRGB(140, 140, 200),
-    TextSize = 12,
-    Font = Enum.Font.GothamBold,
-    LayoutOrder = 3,
-    ZIndex = 12,
-    Parent = Content
+    Size=UDim2.new(1,0,0,40), BackgroundColor3=Color3.fromRGB(30,30,55),
+    BorderSizePixel=0, Text="SCAN CURRENT PLAYERS",
+    TextColor3=Color3.fromRGB(140,140,200), TextSize=12, Font=Enum.Font.GothamBold,
+    LayoutOrder=3, ZIndex=12, Parent=Content
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = ScanBtn })
-Create("UIStroke", { Color = Color3.fromRGB(60, 60, 110), Thickness = 1, Parent = ScanBtn })
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=ScanBtn})
+Create("UIStroke", {Color=Color3.fromRGB(60,60,110), Thickness=1, Parent=ScanBtn})
 
--- ── LOG BOX ───────────────────────────────────────────────────
+-- Log box
 local LogFrame = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 130),
-    BackgroundColor3 = Color3.fromRGB(8, 8, 14),
-    BorderSizePixel = 0,
-    LayoutOrder = 4,
-    ClipsDescendants = true,
-    ZIndex = 12,
-    Parent = Content
+    Size=UDim2.new(1,0,0,130), BackgroundColor3=Color3.fromRGB(8,8,14),
+    BorderSizePixel=0, LayoutOrder=4, ClipsDescendants=true, ZIndex=12, Parent=Content
 })
-Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = LogFrame })
-Create("UIStroke", { Color = Color3.fromRGB(35, 35, 60), Thickness = 1, Parent = LogFrame })
-
-local LogHeader = Create("TextLabel", {
-    Size = UDim2.new(1, -12, 0, 22),
-    Position = UDim2.new(0, 10, 0, 4),
-    BackgroundTransparency = 1,
-    Text = "LOG",
-    TextColor3 = Color3.fromRGB(70, 70, 110),
-    TextSize = 10,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = LogFrame
+Create("UICorner", {CornerRadius=UDim.new(0,8), Parent=LogFrame})
+Create("UIStroke", {Color=Color3.fromRGB(35,35,60), Thickness=1, Parent=LogFrame})
+Create("TextLabel", {
+    Size=UDim2.new(1,-12,0,22), Position=UDim2.new(0,10,0,4),
+    BackgroundTransparency=1, Text="LOG",
+    TextColor3=Color3.fromRGB(70,70,110), TextSize=10, Font=Enum.Font.GothamBold,
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=13, Parent=LogFrame
 })
 
 local LogScroll = Create("ScrollingFrame", {
-    Size = UDim2.new(1, -8, 1, -28),
-    Position = UDim2.new(0, 4, 0, 26),
-    BackgroundTransparency = 1,
-    ScrollBarThickness = 3,
-    ScrollBarImageColor3 = Color3.fromRGB(60, 60, 100),
-    CanvasSize = UDim2.new(0, 0, 0, 0),
-    ZIndex = 13,
-    Parent = LogFrame
+    Size=UDim2.new(1,-8,1,-28), Position=UDim2.new(0,4,0,26),
+    BackgroundTransparency=1, ScrollBarThickness=3,
+    ScrollBarImageColor3=Color3.fromRGB(60,60,100),
+    CanvasSize=UDim2.new(0,0,0,0), ZIndex=13, Parent=LogFrame
 })
-
 local LogLayout = Create("UIListLayout", {
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Padding = UDim.new(0, 2),
-    Parent = LogScroll
+    SortOrder=Enum.SortOrder.LayoutOrder, Padding=UDim.new(0,2), Parent=LogScroll
 })
 
 local logCount = 0
 local function addLog(msg, color)
     logCount = logCount + 1
-    color = color or Color3.fromRGB(140, 140, 180)
-    local entry = Create("TextLabel", {
-        Size = UDim2.new(1, -6, 0, 16),
-        BackgroundTransparency = 1,
-        Text = os.date("%H:%M:%S") .. "  " .. msg,
-        TextColor3 = color,
-        TextSize = 10,
-        Font = Enum.Font.Code,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        LayoutOrder = logCount,
-        ZIndex = 14,
-        Parent = LogScroll
+    color = color or Color3.fromRGB(140,140,180)
+    Create("TextLabel", {
+        Size=UDim2.new(1,-6,0,16), BackgroundTransparency=1,
+        Text=os.date("%H:%M:%S").."  "..msg,
+        TextColor3=color, TextSize=10, Font=Enum.Font.Code,
+        TextXAlignment=Enum.TextXAlignment.Left,
+        TextTruncate=Enum.TextTruncate.AtEnd,
+        LayoutOrder=logCount, ZIndex=14, Parent=LogScroll
     })
-    -- Auto-resize canvas
-    local totalHeight = LogLayout.AbsoluteContentSize.Y
-    LogScroll.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 4)
-    LogScroll.CanvasPosition = Vector2.new(0, totalHeight)
+    local total = LogLayout.AbsoluteContentSize.Y
+    LogScroll.CanvasSize = UDim2.new(0,0,0,total+4)
+    LogScroll.CanvasPosition = Vector2.new(0, total)
 end
 
--- ── PLAYER COUNT LABEL ────────────────────────────────────────
+-- Player count
 local PlayerCountLabel = Create("TextLabel", {
-    Size = UDim2.new(1, 0, 0, 18),
-    BackgroundTransparency = 1,
-    Text = "Players in server: " .. #Players:GetPlayers(),
-    TextColor3 = Color3.fromRGB(70, 70, 100),
-    TextSize = 10,
-    Font = Enum.Font.Gotham,
-    TextXAlignment = Enum.TextXAlignment.Center,
-    LayoutOrder = 5,
-    ZIndex = 12,
-    Parent = Content
+    Size=UDim2.new(1,0,0,18), BackgroundTransparency=1,
+    Text="Players in server: "..(#Players:GetPlayers()),
+    TextColor3=Color3.fromRGB(70,70,100), TextSize=10, Font=Enum.Font.Gotham,
+    TextXAlignment=Enum.TextXAlignment.Center, LayoutOrder=5, ZIndex=12, Parent=Content
 })
 
 -- ============================================================
---  STATE UPDATE HELPERS
+--  STATUS VISUAL UPDATE
 -- ============================================================
 
 local function setStatus(enabled)
     if enabled then
         StatusText.Text = "ACTIVE"
-        StatusText.TextColor3 = Color3.fromRGB(80, 255, 140)
-        StatusDot.BackgroundColor3 = Color3.fromRGB(80, 255, 140)
-        -- Pulse dot
-        local tween = TweenService:Create(StatusDot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-            BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        })
-        tween:Play()
-        -- Switch visual
-        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 180, 90)}):Play()
+        StatusText.TextColor3 = Color3.fromRGB(80,255,140)
+        TweenService:Create(StatusDot, TweenInfo.new(0.8,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
+            {BackgroundColor3=Color3.fromRGB(40,180,80)}):Play()
+        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3=Color3.fromRGB(50,180,90)}):Play()
         TweenService:Create(SwitchKnob, TweenInfo.new(0.2), {
-            Position = UDim2.new(0, 25, 0.5, -9),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            Position=UDim2.new(0,25,0.5,-9), BackgroundColor3=Color3.fromRGB(255,255,255)
         }):Play()
     else
-        TweenService:Create(StatusDot, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
         StatusText.Text = "INACTIVE"
-        StatusText.TextColor3 = Color3.fromRGB(100, 100, 100)
-        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
+        StatusText.TextColor3 = Color3.fromRGB(100,100,100)
+        TweenService:Create(StatusDot, TweenInfo.new(0.3), {BackgroundColor3=Color3.fromRGB(60,60,60)}):Play()
+        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3=Color3.fromRGB(40,40,55)}):Play()
         TweenService:Create(SwitchKnob, TweenInfo.new(0.2), {
-            Position = UDim2.new(0, 3, 0.5, -9),
-            BackgroundColor3 = Color3.fromRGB(100, 100, 120)
+            Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=Color3.fromRGB(100,100,120)
         }):Play()
     end
 end
 
 -- ============================================================
---  ENABLE / DISABLE WIRED UP
+--  STAFF ALERT TRIGGER  (replaces direct kick)
 -- ============================================================
+
+local function triggerStaffAlert(staffName, staffRole)
+    addLog("STAFF JOINED: "..staffName, Color3.fromRGB(255,80,80))
+    showStaffAlert(staffName, staffRole, function()
+        LocalPlayer:Kick("Staff member detected in server.")
+    end)
+end
+
+-- Wire Leave button to actually kick
+LeaveBtn.MouseButton1Click:Connect(function()
+    if not alertActive then return end
+    alertActive = false
+    if alertCountdownThread then task.cancel(alertCountdownThread) alertCountdownThread = nil end
+    AlertCard.Visible = false
+    AlertOverlay.Visible = false
+    task.wait(0.05)
+    LocalPlayer:Kick("You left due to staff presence.")
+end)
+
+-- ============================================================
+--  ENABLE / DISABLE
+-- ============================================================
+
+local function onPlayerJoining(player)
+    if not AdminCheck_Enabled then return end
+    local found, role, groupID = isStaff(player)
+    local hasTrackers, trackedPlayer = hasTracker(player)
+    if found or hasTrackers then
+        local r = hasTrackers and "Tracker User" or role
+        triggerStaffAlert(player.Name, r)
+    end
+end
+
+local function checkCurrentStaff()
+    local staffFound = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local found, role, groupID = isStaff(player)
+            local hasTrackers, trackedPlayer = hasTracker(player)
+            if found or hasTrackers then
+                table.insert(staffFound, {
+                    Name=player.Name,
+                    Role=hasTrackers and "Tracker User" or role,
+                    GroupId=groupID,
+                    TrackedPlayer=trackedPlayer
+                })
+            end
+        end
+    end
+    if #staffFound > 0 then
+        local s = staffFound[1]
+        triggerStaffAlert(s.Name, s.Role)
+        return true
+    end
+    return false
+end
 
 local function AdminCheck_Enable()
     if AdminCheck_Enabled then return end
     AdminCheck_Enabled = true
     setStatus(true)
-    addLog("Monitoring ENABLED", Color3.fromRGB(80, 255, 140))
+    addLog("Monitoring ENABLED", Color3.fromRGB(80,255,140))
 
     if AdminCheck_Connection then AdminCheck_Connection:Disconnect() end
     AdminCheck_Connection = Players.PlayerAdded:Connect(function(player)
+        addLog("Joined: "..player.Name, Color3.fromRGB(160,160,220))
+        PlayerCountLabel.Text = "Players in server: "..#Players:GetPlayers()
         onPlayerJoining(player)
-        addLog("Player joined: " .. player.Name, Color3.fromRGB(160, 160, 220))
-        PlayerCountLabel.Text = "Players in server: " .. #Players:GetPlayers()
     end)
 
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Staff Detection", Text = "Monitoring active", Duration = 5,
-            Icon = "rbxassetid://121588751997553"
+            Title="Staff Detection", Text="Monitoring active", Duration=5
         })
     end)
 
     task.spawn(function()
-        addLog("Running initial scan...", Color3.fromRGB(220, 200, 80))
+        addLog("Running initial scan...", Color3.fromRGB(220,200,80))
         local found = checkCurrentStaff()
-        if found then
-            AdminCheck_Enabled = false
-            setStatus(false)
-            addLog("STAFF FOUND — kicked!", Color3.fromRGB(255, 80, 80))
-            if AdminCheck_Connection then
-                AdminCheck_Connection:Disconnect()
-                AdminCheck_Connection = nil
-            end
-        else
-            addLog("Initial scan clean ✓", Color3.fromRGB(80, 255, 140))
+        if not found then
+            addLog("Initial scan clean", Color3.fromRGB(80,255,140))
         end
     end)
 end
@@ -2122,7 +2220,7 @@ local function AdminCheck_Disable()
     if not AdminCheck_Enabled then return end
     AdminCheck_Enabled = false
     setStatus(false)
-    addLog("Monitoring DISABLED", Color3.fromRGB(255, 100, 100))
+    addLog("Monitoring DISABLED", Color3.fromRGB(255,100,100))
     if AdminCheck_Connection then
         AdminCheck_Connection:Disconnect()
         AdminCheck_Connection = nil
@@ -2130,80 +2228,57 @@ local function AdminCheck_Disable()
 end
 
 -- ============================================================
---  BUTTON INTERACTIONS
+--  BUTTON WIRING
 -- ============================================================
 
 SwitchButton.MouseButton1Click:Connect(function()
-    if AdminCheck_Enabled then
-        AdminCheck_Disable()
-    else
-        AdminCheck_Enable()
-    end
+    if AdminCheck_Enabled then AdminCheck_Disable() else AdminCheck_Enable() end
 end)
 
 ScanBtn.MouseButton1Click:Connect(function()
     if not AdminCheck_Enabled then
-        addLog("Enable monitoring first!", Color3.fromRGB(255, 200, 60))
+        addLog("Enable monitoring first!", Color3.fromRGB(255,200,60))
         return
     end
-    addLog("Manual scan started...", Color3.fromRGB(160, 160, 255))
-    ScanBtn.Text = "⟳  SCANNING..."
-    ScanBtn.TextColor3 = Color3.fromRGB(220, 200, 80)
+    addLog("Manual scan...", Color3.fromRGB(160,160,255))
+    ScanBtn.Text = "SCANNING..."
+    ScanBtn.TextColor3 = Color3.fromRGB(220,200,80)
     task.spawn(function()
         local found = checkCurrentStaff()
-        if found then
-            addLog("STAFF FOUND — kicked!", Color3.fromRGB(255, 80, 80))
-        else
-            addLog("Scan complete — no staff ✓", Color3.fromRGB(80, 255, 140))
-        end
+        if not found then addLog("Scan complete - no staff", Color3.fromRGB(80,255,140)) end
         task.wait(0.8)
-        ScanBtn.Text = "⟳  SCAN CURRENT PLAYERS"
-        ScanBtn.TextColor3 = Color3.fromRGB(140, 140, 200)
+        ScanBtn.Text = "SCAN CURRENT PLAYERS"
+        ScanBtn.TextColor3 = Color3.fromRGB(140,140,200)
     end)
 end)
 
--- Hover effects for scan button
 ScanBtn.MouseEnter:Connect(function()
-    TweenService:Create(ScanBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(40, 40, 80),
-        TextColor3 = Color3.fromRGB(180, 180, 255)
-    }):Play()
+    TweenService:Create(ScanBtn, TweenInfo.new(0.15), {BackgroundColor3=Color3.fromRGB(40,40,80)}):Play()
 end)
 ScanBtn.MouseLeave:Connect(function()
-    TweenService:Create(ScanBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(30, 30, 55),
-        TextColor3 = Color3.fromRGB(140, 140, 200)
-    }):Play()
+    TweenService:Create(ScanBtn, TweenInfo.new(0.15), {BackgroundColor3=Color3.fromRGB(30,30,55)}):Play()
 end)
 
--- Toggle main window
 local windowOpen = false
 ToggleBtn.MouseButton1Click:Connect(function()
     windowOpen = not windowOpen
     MainFrame.Visible = windowOpen
     if windowOpen then
-        MainFrame.Size = UDim2.new(0, 0, 0, 0)
-        MainFrame.Position = UDim2.new(0, 58, 0, 27)
-        TweenService:Create(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 300, 0, 360),
+        MainFrame.Size = UDim2.new(0,0,0,0)
+        TweenService:Create(MainFrame, TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {
+            Size=UDim2.new(0,300,0,370)
         }):Play()
-        PlayerCountLabel.Text = "Players in server: " .. #Players:GetPlayers()
+        PlayerCountLabel.Text = "Players in server: "..#Players:GetPlayers()
     end
 end)
 
--- Keep player count live
 Players.PlayerAdded:Connect(function()
-    if windowOpen then
-        PlayerCountLabel.Text = "Players in server: " .. #Players:GetPlayers()
-    end
+    if windowOpen then PlayerCountLabel.Text = "Players in server: "..#Players:GetPlayers() end
 end)
 Players.PlayerRemoving:Connect(function()
     task.wait()
-    if windowOpen then
-        PlayerCountLabel.Text = "Players in server: " .. #Players:GetPlayers()
-    end
+    if windowOpen then PlayerCountLabel.Text = "Players in server: "..#Players:GetPlayers() end
 end)
 
--- Initial log
-addLog("Admin Check v2.1 loaded", Color3.fromRGB(120, 120, 180))
-addLog("Click the switch to begin", Color3.fromRGB(80, 80, 120))
+addLog("Admin Check v2.2 loaded", Color3.fromRGB(120,120,180))
+addLog("Click the switch to start", Color3.fromRGB(80,80,120))
